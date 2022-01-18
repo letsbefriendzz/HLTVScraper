@@ -1,4 +1,6 @@
 from __future__ import generator_stop
+from contextlib import nullcontext
+from distutils.log import error
 import sys
 from turtle import st
 import requests
@@ -12,6 +14,7 @@ from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
 
 MonthEnd = [ '31', '28', '31', '30', '31', '30', '31', '31', '30', '31', '30', '31' ]
+MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 #generates strings representing the start and end dates of all 12 months for data collection purposes (a la htlv!)
 def GenerateMonthArray(year):
     StartDates = []
@@ -27,43 +30,88 @@ def GenerateMonthArray(year):
 
     return [StartDates, EndDates]
 
-#yekindar = get_stats.GetPlayer()
-#yekindar.PrintPlayer()
-
-
-#probably a better way to do this than hardcoding but whatever! :)
-
 # test harness:
 
 StartDates = GenerateMonthArray(2021)[0]
 EndDates = GenerateMonthArray(2021)[1]
 
-p1name      = "ropz"
-p1id        = "11816"
+players = {
+    #FAZE
+    "ropz":"11816",
+    "broky":"18053",
+    "twistzz":"10394",
 
-p2name      = "broky"
-p2id        = "18053"
+    #GAMBIT
+    "hobbit":"8528",
+    "sh1ro":"16920",
+    "ax1le":"16555",
 
-p1 = hltv_access.GetPlayerName(p1id, p1name)
-p1ratings = []
+    #NAVI
+    "s1mple":"7998",
+    "b1t":"18987",
+    "electronic":"8918",
 
-p2 = hltv_access.GetPlayerName(p2id, p2name)
-p2ratings = []
+    #LIQUID
+    "elige":"8738",
+    "naf":"8520",
 
-i = 0
-while i < 12:
-    p1ratings.append(float(hltv_access.GetRating(p1id, p2name, StartDates[i][0], EndDates[i][0])))
-    p2ratings.append(float(hltv_access.GetRating(p2id, p2name, StartDates[i][0], EndDates[i][0])))
-    #sleep in fear of getting ip banned from hltv lol
-    sleep(0.2)
-    i += 1
+    #HEROIC
+    "stavn":"10994",
+
+    #FURIA
+    "KSCERATO":"15631",
+
+    #ASTRALIS
+    "blameF":"15165",
+
+    #G2
+    "huNter-":"3972",
+    "NiKo":"3741",
+
+    #NIP
+    "device":"7592",
+
+    #VP
+    "jame":"13776",
+    "yekindar":"13915",
+
+    #VITALITY
+    "zywoo":"11893"
+}
+
+def RatingAccessError():
+    print("Error accessing Rating2.0 from HLTV\nYou've likely been IP banned temporarily.")
+
+def PlotPlayers():
+    for i in players:
+        p1id = players[i]
+        p1name = i
+        p1ratings = []
+
+        print("Fetching and plotting " + p1name + " statistics.")
+
+        j = 0
+        while j < 12:
+            rating = float(hltv_access.GetRating(p1id, p1id, StartDates[j][0], EndDates[j][0]))
+            print(rating)
+            if(rating < 0):
+                raise RatingAccessError
+            if rating < 0.7 and j > 1:
+                p1ratings.append(p1ratings[j - 1])
+            else:
+                p1ratings.append(rating)
+            #sleep in fear of getting ip banned from hltv lol
+            sleep(0.5)
+            j += 1
+
+        plt.plot(MONTHS, p1ratings, label=str(p1name + " Rating 2.0"))
 
 #plots collected data onto a graph for funzo kabunzo
-plt.plot(["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], p1ratings, label=str(p1name + " Rating 2.0"))
-plt.plot(["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], p2ratings, label=str(p2name + " Rating 2.0"))
+PlotPlayers()
 plt.xlabel('Month')
 plt.ylabel('Rating 2.0')
-plt.yticks( ( 0.8, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3 ) )
 plt.title("Rating 2.0 over 2021")
+ax = plt.gca()
+ax.set_ylim([0.8, 1.5])
 plt.legend()
 plt.show()
